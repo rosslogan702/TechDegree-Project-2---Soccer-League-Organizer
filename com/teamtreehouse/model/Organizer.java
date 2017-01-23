@@ -23,18 +23,26 @@ public class Organizer {
   private Map<String, String> mMenu;
   private BufferedReader mReader;
   private ArrayList<Player> mAvailablePlayers;
+  private static final String CREATE_TEAM = "1";
+  private static final String ADD_PLAYER = "2";
+  private static final String REMOVE_PLAYER = "3";
+  private static final String HEIGHT_REPORT="4";
+  private static final String LEAGUE_BALANCE_REPORT="5";
+  private static final String PRINT_ROSTER="6";
+  private static final String EXIT="7";
+  private static final String DASH_SEPARATOR="================================================";
   
   public Organizer() {
    mSeason = new Season();
    mReader = new BufferedReader(new InputStreamReader(System.in));
    mMenu = new TreeMap<String, String>();
-   mMenu.put("create", "Create a new team for the season");
-   mMenu.put("add player", "Add players to a team for the season");
-   mMenu.put("remove player", "Remove a player from a team for the season");
-   mMenu.put("height report", "Generate a height report for a team");
-   mMenu.put("experience report", "Generate a league balance report");
-   mMenu.put("print roster", "Print roster of a coach's team");
-   mMenu.put("quit", "Exit the program");
+   mMenu.put(CREATE_TEAM, "Create a new team for the season");
+   mMenu.put(ADD_PLAYER, "Add players to a team for the season");
+   mMenu.put(REMOVE_PLAYER, "Remove a player from a team for the season");
+   mMenu.put(HEIGHT_REPORT, "Generate a height report for a team");
+   mMenu.put(LEAGUE_BALANCE_REPORT, "Generate a league balance report");
+   mMenu.put(PRINT_ROSTER, "Print roster of a coach's team");
+   mMenu.put(EXIT, "Exit the program");
    mAvailablePlayers = new ArrayList<Player> (Arrays.asList(Players.load()));
    Collections.sort(mAvailablePlayers);
   }
@@ -45,35 +53,37 @@ public class Organizer {
      try{
        choice = promptForAction();
        switch(choice) {
-        case "create":              createTeam();
-                                    break; 
-        case "add player":          addPlayer();
-                                    break;
-        case "remove player":       removePlayer();
-                                    break;
-        case "height report":       heightReport();
-                                    break;
-        case "experience report":   experienceReport();
-                                    break;
-        case "print roster":        printRoster();
-                                    break;
-        case "quit":                System.out.println("Thanks for playing");
-                                    break;
-        default:                    System.out.printf("Unknown choice: '%s'. Try again. %n%n%n"
+        case CREATE_TEAM:             createTeam();
+                                      break;
+        case ADD_PLAYER:              addPlayer();
+                                      break;
+        case REMOVE_PLAYER:           removePlayer();
+                                      break;
+        case HEIGHT_REPORT:           heightReport();
+                                      break;
+        case LEAGUE_BALANCE_REPORT:   experienceReport();
+                                      break;
+        case PRINT_ROSTER:            printRoster();
+                                      break;
+        case EXIT:                    System.out.println("Thanks for playing");
+                                      break;
+        default:                      System.out.printf("Unknown choice: '%s'. Try again. %n%n%n"
                                                     , choice);
        }
      } catch (IOException ioe) {
         System.out.println("Problem with input");
         ioe.printStackTrace();
      }
-    } while(!choice.equals("quit"));
+    } while(!choice.equals(EXIT));
   }
   
   private String promptForAction() throws IOException{
+    System.out.println(DASH_SEPARATOR);
     System.out.println("\nPlease select an option from the below");
     for(Map.Entry<String, String> option: mMenu.entrySet()) {
-      System.out.printf("%s - %s %n", option.getKey(), option.getValue());
+      System.out.printf("%s.)  %s %n", option.getKey(), option.getValue());
     }
+    System.out.println(DASH_SEPARATOR + "\n");
     System.out.println("Please select your option: ");
     String choice = mReader.readLine();
     return choice.trim().toLowerCase();
@@ -83,9 +93,12 @@ public class Organizer {
      //TODO: Do not allow the same team with the same team name to be added twice
     if(mSeason.checkIfAbleToAddTeam()){
     Team team = promptForCreateTeam();
-    mSeason.addTeam(team);
-    System.out.printf("Added team %s with coach %s %n%n%n",
+    boolean isValidTeam = checkValidTeamEntered(team);
+      if(isValidTeam){
+          mSeason.addTeam(team);
+          System.out.printf("Added team %s with coach %s %n%n%n",
                             team.getTeamName(), team.getCoachName());
+      } 
     } else {
       System.out.println("Too many teams. No more teams than players are allowed to be added. \n");
     }
@@ -94,8 +107,8 @@ public class Organizer {
   private boolean checkValidTeamEntered(Team team) throws IOException {
     boolean isValidTeam = true;
     if (team==null) {
-       System.out.println("Invalid team entered. Please select add player" + 
-                          " from menu and try again. \n");
+       System.out.println("Invalid team entered. " + 
+                          "Please select from menu and try again. \n");
        return !isValidTeam;
     }
     return isValidTeam;
@@ -159,8 +172,20 @@ public class Organizer {
     Team team = promptForSelectTeam();
     boolean isValidTeamEntered = checkValidTeamEntered(team);
     if(isValidTeamEntered){
-     team.printHeightReport(); 
+     printHeightReport(team); 
     }
+  }
+  
+  public void printHeightReport(Team team) {
+   Map<String, ArrayList<Player>> heightMap =team.getPlayersGroupedByHeight();
+   for(Map.Entry<String, ArrayList<Player>> entry: heightMap.entrySet()){
+     String heightRange = entry.getKey();
+     ArrayList<Player> players = entry.getValue();
+     System.out.println("\n" + players.size() + " players in height range " + heightRange + " inches, they are: ");
+     for(Player player: players){
+      System.out.println(player.getFirstName() + " " + player.getLastName()); 
+     }
+   }
   }
   
   private void experienceReport() throws IOException {
@@ -172,6 +197,10 @@ public class Organizer {
     String teamName = mReader.readLine();
     System.out.println("Enter the team's coach: ");
     String coachName = mReader.readLine();
+    if(teamName.isEmpty() || coachName.isEmpty()){
+     System.out.println("Either the team name or coach name entered were empty.");
+     return null; 
+    }
     return new Team(teamName, coachName);
   }
   
@@ -270,11 +299,15 @@ public class Organizer {
      String experience = entry.getKey();
      ArrayList<Player> players = entry.getValue();
      System.out.println("Number of " + experience + " players are: " + players.size());
+     int percentage = 0;
+     if(team.getPlayers().size()>0){
+      percentage = ((players.size()*100)/team.getPlayers().size()); 
+     }
      System.out.println("Percentage of " + experience + 
-                       " players " + (((players.size()*100)/team.getPlayers().size())) + "%");
+                       " players " + percentage + "%");
       }
-      team.printHeightReport();
-       System.out.println("======================================");
+      printHeightReport(team);
+      System.out.println(DASH_SEPARATOR);
     }
   }
 }

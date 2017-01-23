@@ -5,7 +5,7 @@ import java.lang.Comparable;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
+import java.util.ArrayList; 
 
 public class Team implements Comparable<Team>{
  
@@ -102,18 +102,6 @@ public class Team implements Comparable<Team>{
     players.put("experienced", experiencedPlayers);
     players.put("inexperienced", inexperiencedPlayers);
     return players;
-  }
-  
-  public void printHeightReport() {
-   Map<String, ArrayList<Player>> heightMap =getPlayersGroupedByHeight();
-   for(Map.Entry<String, ArrayList<Player>> entry: heightMap.entrySet()){
-     String heightRange = entry.getKey();
-     ArrayList<Player> players = entry.getValue();
-     System.out.println("\n" + players.size() + " players in height range " + heightRange + " inches, they are: ");
-     for(Player player: players){
-      System.out.println(player.getFirstName() + " " + player.getLastName()); 
-     }
-   }
   }
   
 }
